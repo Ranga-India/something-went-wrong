@@ -1,164 +1,419 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Simple GitHub Page</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Configure Tailwind to use Inter font and modern styling -->
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        'primary': '#10b981', // Emerald green
-                        'secondary': '#059669', // Darker emerald
-                        'background': '#f9fafb', // Light gray background
-                    }
-                }
-            }
-        }
-    </script>
-
-    <script src="script.js"></script>
+    <title>Blog Post - API Publish Prototype</title>
     <style>
-        /* Ensures smooth scrolling for navigation (optional but nice) */
-        html {
-            scroll-behavior: smooth;
+        /* --- Base Styling --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f5f6;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
         }
+
+        .blog-container {
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            max-width: 800px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+
+        .blog-image {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            border-radius: 8px;
+            background-color: #eee;
+        }
+
+        /* --- Buttons --- */
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px; /* Pill shape like modern dashboards */
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: #0a66c2; /* LinkedIn Blue */
+            color: white;
+        }
+
+        .btn-primary:hover { background-color: #004182; }
+        .btn-primary:disabled { background-color: #a0b4c7; cursor: not-allowed; }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #0a66c2;
+            border: 1px solid #0a66c2;
+        }
+        
+        .btn-secondary:hover { background-color: #f3f8fd; }
+
+        /* --- Modals & Overlays --- */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            z-index: 1000;
+        }
+
+        .overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            display: none; /* Controlled by JS classes */
+        }
+
+        .modal.active {
+            display: block;
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 { margin: 0; font-size: 18px; }
+        .close-btn { cursor: pointer; font-size: 20px; color: #666; background: none; border: none; }
+
+        .modal-body { padding: 24px; }
+
+        /* --- View 1: Integration Dashboard (Like Wix) --- */
+        .social-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .social-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .social-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .status-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .connected-badge {
+            color: #057642;
+            font-size: 12px;
+            display: none;
+        }
+
+        /* --- View 2: Fake Browser Popup (OAuth Simulation) --- */
+        .oauth-window {
+            background: white;
+            border-radius: 8px;
+            width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+            flex-direction: column;
+            z-index: 1001;
+            border: 1px solid #ccc;
+        }
+
+        .oauth-window.active { display: flex; }
+
+        .browser-bar {
+            background: #f1f1f1;
+            padding: 10px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            font-size: 12px;
+            color: #555;
+            text-align: center;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .oauth-content {
+            padding: 30px;
+            text-align: center;
+        }
+
+        .oauth-content img { width: 50px; height: 50px; border-radius: 50%; margin-bottom: 15px;}
+
+        /* --- View 3: Composer --- */
+        .composer-area {
+            width: 100%;
+            height: 120px;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+        }
+
+        /* --- Utilities --- */
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #0a66c2;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin: 0 auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
+<body>
 
+    <main class="blog-container">
+        <img src="https://images.unsplash.com/photo-1677442136019-21780ecad995?q=80&w=1200&auto=format&fit=crop" alt="AI Concept" class="blog-image">
+        <h1>How AI is Changing Web Development</h1>
+        <p>By Jane Doe | April 3, 2026</p>
+        <p>Artificial Intelligence is rapidly evolving, bringing new tools to web developers that automate mundane tasks and generate code snippets. In this post, we explore how integrating AI into your workflow can save you hours of manual labor.</p>
+        
+        <button id="btnOpenDashboard" class="btn btn-primary" style="margin-top: 20px;">
+            Publish to Social Media
+        </button>
+    </main>
 
-<body class="bg-background min-h-screen text-gray-800 font-sans">
-
-    <main class="py-12 md:py-20">
-        <section id="contact" class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
-            <div class="flex flex-col space-y-8">
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">Empty <b>div</b> with <b>height, weight</b> and <b>background color.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-
-                    <div class="h-10 w-full bg-red-300">
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Round Borders.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-
-                    <div class="h-10 w-full bg-red-300 rounded-xl">
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Text.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-
-                    <div class="h-10 w-full bg-red-300 rounded-xl">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Text aligned center (vertically and horizontally).</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-
-                    <div class="h-10 w-full bg-red-300 rounded-xl flex justify-center items-center">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Box Shadow.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-                    <div class="h-10 w-full bg-red-300 rounded-xl flex justify-center items-center shadow-xl   ">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Bold Text.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-                    <div
-                        class="h-10 w-full bg-red-300 rounded-xl flex justify-center items-center shadow-xl font-semibold">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Text Color.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-                    <div
-                        class="h-10 w-full bg-red-300 rounded-xl flex justify-center items-center shadow-xl font-semibold text-blue-800">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-                <div class="flex flex-col space-y-2">
-                    <div class="flex justify-between w-full">
-                        <p class="text-sm">+ <b>Animation.</b></p>
-                        <a href="#" class="text-sm font-semibold text-secondary">Show Code</a>
-                    </div>
-                    <div
-                        class="h-10 w-full bg-red-300 rounded-xl flex justify-center items-center shadow-xl font-semibold text-blue-800 text-transform: capitalize  animate-bounce">
-                        Something went wrong. Please try again later.
-                    </div>
-                </div>
-
-
+    <div id="mainOverlay" class="overlay">
+        
+        <div id="viewDashboard" class="modal active">
+            <div class="modal-header">
+                <h2>Connect and manage social accounts</h2>
+                <button class="close-btn" onclick="closeAll()">&times;</button>
             </div>
-        </section>
-        <!-- mx-auto px-4 sm:px-6 lg:px-8 pt-10 -->
-
-        <div id="myModal"
-            class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex justify-center items-center">
-            <div
-                class="bg-white rounded-lg shadow-2xl p-6 w-11/12 max-w-2xl mx-4 transform transition-all sm:my-8 sm:align-middle">
-                <!-- <div class="flex justify-between items-center pb-3">
-                <h3 class="text-lg font-semibold text-gray-900">
-                  🎉 Welcome to the Pop-up!
-                </h3>
-                <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 focus:outline-none">
-                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
-              </div> -->
-                <div class="py-4">
-                    <pre id="modalContent"
-                        class="bg-gray-800 text-green-300 p-4 rounded-lg overflow-auto text-xs"></pre>
-                </div>
-                <div class="flex justify-end pt-3">
-                    <button id="closeModalFooterBtn"
-                        class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded transition text-sm">
-                        Close
-                    </button>
+            <div class="modal-body">
+                <div class="social-grid">
+                    <div class="social-card">
+                        <div class="social-info">
+                            <div style="background: #0a66c2; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold;">in</div>
+                            <div>
+                                LinkedIn
+                                <div id="liStatusText" class="status-text">Not connected</div>
+                                <div id="liConnectedBadge" class="connected-badge">✓ Connected</div>
+                            </div>
+                        </div>
+                        <button id="btnConnectLI" class="btn btn-secondary">Connect</button>
+                        <button id="btnCreatePostLI" class="btn btn-primary" style="display: none;">Create Post</button>
+                    </div>
+                    
+                    <div class="social-card" style="opacity: 0.6;">
+                        <div class="social-info">
+                            <div style="background: black; color: white; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 4px; font-weight: bold;">X</div>
+                            <div>X (Twitter)</div>
+                        </div>
+                        <button class="btn btn-secondary" disabled>Coming Soon</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </main>
 
+        <div id="viewComposer" class="modal">
+            <div class="modal-header">
+                <h2>Publish to LinkedIn</h2>
+                <button class="close-btn" onclick="closeAll()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 14px; color: #555; margin-top:0;">Draft your post. We will publish this directly to your LinkedIn feed via API.</p>
+                <textarea id="postContent" class="composer-area">Just published a new article: "How AI is Changing Web Development" Check it out here: https://yourblog.com/ai-web-dev</textarea>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button id="btnAiMagic" class="btn btn-secondary" style="font-size: 12px; padding: 6px 12px;">✨ Enhance with AI</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <div id="publishLoader" class="loader"></div>
+                        <button id="btnSubmitPost" class="btn btn-primary">Publish Now</button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <div id="viewSuccess" class="modal">
+            <div class="modal-body" style="text-align: center; padding: 40px 20px;">
+                <div style="font-size: 40px; margin-bottom: 10px;">🎉</div>
+                <h2>Successfully Published!</h2>
+                <p style="color: #666;">Your post is now live on your LinkedIn profile.</p>
+                <button class="btn btn-secondary" onclick="closeAll()" style="margin-top: 20px;">Close Dashboard</button>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="oauthWindow" class="oauth-window">
+        <div class="browser-bar">🔒 https://www.linkedin.com/oauth/v2/authorization...</div>
+        <div class="oauth-content">
+            <h2 style="margin-top: 0;">LinkedIn</h2>
+            <p><strong>YourBlogApp</strong> would like to access your LinkedIn account to:</p>
+            <ul style="text-align: left; font-size: 13px; color: #555; background: #f9f9f9; padding: 15px 15px 15px 30px; border-radius: 6px;">
+                <li>Create, modify, and delete posts on your behalf.</li>
+                <li>Read your basic profile data.</li>
+            </ul>
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 30px;">
+                <button class="btn btn-secondary" style="flex: 1;" onclick="cancelOAuth()">Cancel</button>
+                <button id="btnAuthorize" class="btn btn-primary" style="flex: 1;">Allow Access</button>
+            </div>
+            <div id="oauthLoader" class="loader" style="margin-top: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let isLinkedInConnected = false;
+
+        // --- DOM Elements ---
+        const mainOverlay = document.getElementById('mainOverlay');
+        const oauthWindow = document.getElementById('oauthWindow');
+        
+        // Views
+        const viewDashboard = document.getElementById('viewDashboard');
+        const viewComposer = document.getElementById('viewComposer');
+        const viewSuccess = document.getElementById('viewSuccess');
+        
+        // Dashboard Elements
+        const btnConnectLI = document.getElementById('btnConnectLI');
+        const btnCreatePostLI = document.getElementById('btnCreatePostLI');
+        const liStatusText = document.getElementById('liStatusText');
+        const liConnectedBadge = document.getElementById('liConnectedBadge');
+
+        // --- View Navigation Logic ---
+        function closeAll() {
+            mainOverlay.classList.remove('active');
+            oauthWindow.classList.remove('active');
+            // Reset to dashboard for next time
+            setTimeout(() => switchModalView(viewDashboard), 300);
+        }
+
+        function switchModalView(targetView) {
+            viewDashboard.classList.remove('active');
+            viewComposer.classList.remove('active');
+            viewSuccess.classList.remove('active');
+            targetView.classList.add('active');
+        }
+
+        // --- Step 1: Open Dashboard ---
+        document.getElementById('btnOpenDashboard').addEventListener('click', () => {
+            mainOverlay.classList.add('active');
+            switchModalView(viewDashboard);
+        });
+
+        // --- Step 2: Trigger OAuth Flow ---
+        btnConnectLI.addEventListener('click', () => {
+            // In a real app, this redirects the user to the LinkedIn OAuth URL.
+            // Here, we simulate opening a popup.
+            mainOverlay.classList.add('active');
+            oauthWindow.classList.add('active');
+        });
+
+        function cancelOAuth() {
+            oauthWindow.classList.remove('active');
+        }
+
+        // --- Step 3: Handle OAuth Authorization ---
+        document.getElementById('btnAuthorize').addEventListener('click', () => {
+            const btn = document.getElementById('btnAuthorize');
+            const loader = document.getElementById('oauthLoader');
+            
+            btn.style.display = 'none';
+            loader.style.display = 'block';
+
+            // Simulate network delay for token exchange
+            setTimeout(() => {
+                oauthWindow.classList.remove('active');
+                btn.style.display = 'block';
+                loader.style.display = 'none';
+                
+                // Update Dashboard State
+                isLinkedInConnected = true;
+                btnConnectLI.style.display = 'none';
+                liStatusText.style.display = 'none';
+                btnCreatePostLI.style.display = 'block';
+                liConnectedBadge.style.display = 'block';
+            }, 1500);
+        });
+
+        // --- Step 4: Open Composer ---
+        btnCreatePostLI.addEventListener('click', () => {
+            switchModalView(viewComposer);
+        });
+
+        // Optional AI Magic feature mapping back to the previous prompt
+        document.getElementById('btnAiMagic').addEventListener('click', (e) => {
+            const textarea = document.getElementById('postContent');
+            e.target.innerText = "Generating...";
+            setTimeout(() => {
+                textarea.value = "🚀 Just published an incredible look into how AI is shaping the future of Web Development! From automating boilerplate to creating seamless UI integrations, the paradigm is shifting.\n\nRead my full thoughts here: https://yourblog.com/ai-web-dev \n\n#WebDev #ArtificialIntelligence #Coding";
+                e.target.innerText = "✨ AI Applied";
+            }, 1000);
+        });
+
+        // --- Step 5: Publish via Simulated API ---
+        document.getElementById('btnSubmitPost').addEventListener('click', () => {
+            const btn = document.getElementById('btnSubmitPost');
+            const loader = document.getElementById('publishLoader');
+            const postContent = document.getElementById('postContent').value;
+
+            // UI Feedback
+            btn.disabled = true;
+            btn.innerText = "Publishing...";
+            loader.style.display = 'block';
+
+            /*
+              REAL WORLD IMPLEMENTATION NOTE:
+              Here is where you would make a fetch() request to YOUR backend.
+              Your backend would then use the stored OAuth Access Token to hit 
+              the LinkedIn UGC Posts API endpoint (https://api.linkedin.com/v2/ugcPosts).
+            */
+
+            // Simulate API Call Delay
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerText = "Publish Now";
+                loader.style.display = 'none';
+                
+                // Show Success
+                switchModalView(viewSuccess);
+            }, 2000);
+        });
+    </script>
 </body>
-
 </html>
